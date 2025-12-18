@@ -133,7 +133,7 @@ function initNavigation() {
  * Countdown Timer
  */
 function initCountdown() {
-    const weddingDate = new Date('December 26, 2025 16:30:00').getTime();
+    const weddingDate = new Date('December 27, 2025 11:00:00').getTime();
     
     function updateCountdown() {
         const now = new Date().getTime();
