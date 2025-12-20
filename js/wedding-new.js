@@ -265,7 +265,13 @@ function initMusicToggle() {
     const musicToggle = document.getElementById('musicToggle');
     const bgMusic = document.getElementById('bgMusic');
     let isPlaying = false;
+    let hasAutoPlayed = false;
+    let audioUnlocked = false;
     
+    // Set volume
+    bgMusic.volume = 0.5;
+    
+    // Manual toggle functionality
     musicToggle.addEventListener('click', function() {
         if (isPlaying) {
             bgMusic.pause();
@@ -281,21 +287,59 @@ function initMusicToggle() {
         isPlaying = !isPlaying;
     });
     
-    // Auto-play on first interaction
-    let hasInteracted = false;
-    document.addEventListener('click', function() {
-        if (!hasInteracted && !isPlaying) {
-            bgMusic.volume = 0.5;
+    // Unlock audio on user interaction (required by browsers)
+    // This "unlocks" the audio element so it can be played later
+    function unlockAudio() {
+        if (!audioUnlocked) {
+            audioUnlocked = true;
+            // Play and immediately pause to unlock audio
+            // This must be done within a user gesture event handler
+            bgMusic.play().then(function() {
+                bgMusic.pause();
+                bgMusic.currentTime = 0;
+            }).catch(function(err) {
+                console.log('Audio unlock failed:', err);
+            });
+        }
+    }
+    
+    // Auto-play on scroll (after audio is unlocked)
+    function handleAutoPlay() {
+        if (audioUnlocked && !hasAutoPlayed && !isPlaying) {
             bgMusic.play().then(function() {
                 isPlaying = true;
+                hasAutoPlayed = true;
                 musicToggle.classList.add('playing');
                 musicToggle.innerHTML = '<i class="fas fa-pause"></i>';
-            }).catch(function() {
-                console.log('Audio autoplay prevented');
+            }).catch(function(err) {
+                console.log('Audio play failed:', err);
             });
-            hasInteracted = true;
         }
-    }, { once: true });
+    }
+    
+    // Listen for user interactions to unlock audio
+    document.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
+    document.addEventListener('mousedown', unlockAudio, { once: true, passive: true });
+    document.addEventListener('click', unlockAudio, { once: true, passive: true });
+    
+    // Throttle function for scroll performance
+    function throttle(func, limit) {
+        let inThrottle;
+        return function() {
+            if (!inThrottle) {
+                func.apply(this, arguments);
+                inThrottle = true;
+                setTimeout(() => inThrottle = false, limit);
+            }
+        };
+    }
+    
+    // Auto-play on scroll (after audio is unlocked)
+    const handleScroll = throttle(function() {
+        handleAutoPlay();
+    }, 100);
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
 }
 
 /**
